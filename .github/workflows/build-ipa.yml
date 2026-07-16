@@ -12,15 +12,33 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      # Source lives as AuroraiOS.zip at the repo root — extract it so
+      # project.yml, App/, Models/, etc. land where xcodegen expects them.
+      - name: Extract AuroraiOS.zip
+        run: |
+          if [ -f AuroraiOS.zip ]; then
+            unzip -o AuroraiOS.zip -d .
+          fi
+
       - name: Install XcodeGen
         run: brew install xcodegen
 
       - name: Generate Xcode project
+        working-directory: AuroraiOS
         run: xcodegen generate
 
       - name: Select Xcode version
         run: sudo xcode-select -s /Applications/Xcode.app
 
+      # --- Signing setup -----------------------------------------------
+      # Requires these repo secrets (see CI_SETUP.md for how to produce them,
+      # no Mac needed — openssl + the Apple Developer web portal):
+      #   APPLE_DIST_CERT_P12_BASE64   base64 of your distribution .p12
+      #   APPLE_DIST_CERT_PASSWORD     password you set on that .p12
+      #   APPLE_PROVISION_PROFILE_BASE64  base64 of the .mobileprovision
+      #   APPLE_TEAM_ID                 your 10-char Apple Developer Team ID
+      #   PROVISIONING_PROFILE_SPECIFIER  the profile's name (as set in the portal)
+      #   KEYCHAIN_PASSWORD             any throwaway password for the temp CI keychain
       - name: Import signing certificate and profile
         env:
           P12_BASE64: ${{ secrets.APPLE_DIST_CERT_P12_BASE64 }}
@@ -48,6 +66,7 @@ jobs:
           cp $PROFILE_PATH ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
 
       - name: Archive
+        working-directory: AuroraiOS
         env:
           DEVELOPMENT_TEAM: ${{ secrets.APPLE_TEAM_ID }}
           PROVISIONING_PROFILE_SPECIFIER: ${{ secrets.PROVISIONING_PROFILE_SPECIFIER }}
@@ -62,6 +81,7 @@ jobs:
             archive
 
       - name: Prepare export options
+        working-directory: AuroraiOS
         env:
           DEVELOPMENT_TEAM: ${{ secrets.APPLE_TEAM_ID }}
           PROVISIONING_PROFILE_SPECIFIER: ${{ secrets.PROVISIONING_PROFILE_SPECIFIER }}
