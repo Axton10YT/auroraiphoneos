@@ -44,6 +44,16 @@ jobs:
             echo "WARNING: Resources/ not found at repo root"
           fi
 
+          # Patch: overwrite the broken AuroraAPIClient.swift inside the zip
+          # with the fixed version committed at repo root, since we can't
+          # edit inside the zip directly.
+          if [ -f AuroraAPIClient.swift ]; then
+            cp AuroraAPIClient.swift "$PROJECT_DIR/Networking/AuroraAPIClient.swift"
+            echo "Patched Networking/AuroraAPIClient.swift"
+          else
+            echo "WARNING: patched AuroraAPIClient.swift not found at repo root"
+          fi
+
           echo "--- final project dir ---"
           find "$PROJECT_DIR" -maxdepth 2
 
