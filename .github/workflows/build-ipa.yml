@@ -12,19 +12,33 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      - name: Extract AuroraiOS.zip
+      - name: Extract AuroraiOS.zip and merge scaffolding
         run: |
           rm -rf _extracted
           mkdir _extracted
           unzip -o AuroraiOS.zip -d _extracted
           echo "--- extracted tree ---"
           find _extracted -maxdepth 4
-          PROJECT_DIR=$(dirname "$(find _extracted -name project.yml | head -n1)")
-          if [ -z "$PROJECT_DIR" ] || [ "$PROJECT_DIR" = "." ]; then
-            echo "project.yml not found anywhere in the zip"
+
+          PROJECT_DIR=$(dirname "$(find _extracted -name AuroraApp.swift | head -n1)")/..
+          PROJECT_DIR=$(cd "$PROJECT_DIR" && pwd)
+          if [ -z "$PROJECT_DIR" ]; then
+            echo "Couldn't locate the extracted AuroraiOS source folder"
             exit 1
           fi
-          echo "Found project.yml in: $PROJECT_DIR"
+          echo "Using PROJECT_DIR=$PROJECT_DIR"
+
+          cp project.yml "$PROJECT_DIR/" 2>/dev/null || echo "WARNING: project.yml not found at repo root"
+          cp exportOptions.template.plist "$PROJECT_DIR/" 2>/dev/null || echo "WARNING: exportOptions.template.plist not found at repo root"
+          if [ -d Resources ]; then
+            cp -r Resources "$PROJECT_DIR/"
+          else
+            echo "WARNING: Resources/ not found at repo root"
+          fi
+
+          echo "--- final project dir ---"
+          find "$PROJECT_DIR" -maxdepth 2
+
           echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
       - name: Install XcodeGen
