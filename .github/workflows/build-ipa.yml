@@ -12,19 +12,26 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
-      # Source lives as AuroraiOS.zip at the repo root — extract it so
-      # project.yml, App/, Models/, etc. land where xcodegen expects them.
       - name: Extract AuroraiOS.zip
         run: |
-          if [ -f AuroraiOS.zip ]; then
-            unzip -o AuroraiOS.zip -d .
+          rm -rf _extracted
+          mkdir _extracted
+          unzip -o AuroraiOS.zip -d _extracted
+          echo "--- extracted tree ---"
+          find _extracted -maxdepth 4
+          PROJECT_DIR=$(dirname "$(find _extracted -name project.yml | head -n1)")
+          if [ -z "$PROJECT_DIR" ] || [ "$PROJECT_DIR" = "." ]; then
+            echo "project.yml not found anywhere in the zip"
+            exit 1
           fi
+          echo "Found project.yml in: $PROJECT_DIR"
+          echo "PROJECT_DIR=$PROJECT_DIR" >> "$GITHUB_ENV"
 
       - name: Install XcodeGen
         run: brew install xcodegen
 
       - name: Generate Xcode project
-        working-directory: AuroraiOS
+        working-directory: ${{ env.PROJECT_DIR }}
         run: xcodegen generate
 
       - name: Select Xcode version
@@ -66,7 +73,7 @@ jobs:
           cp $PROFILE_PATH ~/Library/MobileDevice/Provisioning\ Profiles/$UUID.mobileprovision
 
       - name: Archive
-        working-directory: AuroraiOS
+        working-directory: ${{ env.PROJECT_DIR }}
         env:
           DEVELOPMENT_TEAM: ${{ secrets.APPLE_TEAM_ID }}
           PROVISIONING_PROFILE_SPECIFIER: ${{ secrets.PROVISIONING_PROFILE_SPECIFIER }}
@@ -81,7 +88,7 @@ jobs:
             archive
 
       - name: Prepare export options
-        working-directory: AuroraiOS
+        working-directory: ${{ env.PROJECT_DIR }}
         env:
           DEVELOPMENT_TEAM: ${{ secrets.APPLE_TEAM_ID }}
           PROVISIONING_PROFILE_SPECIFIER: ${{ secrets.PROVISIONING_PROFILE_SPECIFIER }}
