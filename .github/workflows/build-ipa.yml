@@ -14,8 +14,12 @@ jobs:
 
       - name: Select Xcode version
         run: |
-          ls /Applications | grep Xcode
-          sudo xcode-select -s /Applications/Xcode_15.4.app
+          echo "--- available Xcode installs ---"
+          ls -d /Applications/Xcode*.app
+          LATEST=$(ls -d /Applications/Xcode*.app | sort -V | tail -n1)
+          echo "Using: $LATEST"
+          sudo xcode-select -s "$LATEST/Contents/Developer"
+          xcodebuild -version
 
       - name: Extract AuroraiOS.zip and merge scaffolding
         run: |
