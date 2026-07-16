@@ -12,6 +12,11 @@ jobs:
       - name: Checkout repo
         uses: actions/checkout@v4
 
+      - name: Select Xcode version
+        run: |
+          ls /Applications | grep Xcode
+          sudo xcode-select -s /Applications/Xcode_15.4.app
+
       - name: Extract AuroraiOS.zip and merge scaffolding
         run: |
           rm -rf _extracted
@@ -47,13 +52,6 @@ jobs:
         working-directory: ${{ env.PROJECT_DIR }}
         run: xcodegen generate
 
-      - name: Select Xcode version
-        run: sudo xcode-select -s /Applications/Xcode.app
-
-      # No certificate, no provisioning profile, no Apple Developer account.
-      # This builds an UNSIGNED .app and packages it as an unsigned .ipa.
-      # Sideloadly/AltStore does the actual signing on-device with your
-      # free Apple ID at install time.
       - name: Build unsigned app
         working-directory: ${{ env.PROJECT_DIR }}
         run: |
